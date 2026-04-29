@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">ADR-Scan</string>
+    <string name="permission_title">需要您的授权</string>
+    <string name="permission_camera_desc">使用相机扫描二维码</string>
+    <string name="permission_notification_desc">后台运行时显示通知</string>
+    <string name="permission_storage_desc">从相册选取图片识别二维码</string>
+    <string name="permission_btn_start">开始使用</string>
+    <string name="permission_btn_settings">去设置</string>
+    <string name="permission_denied_msg">需要相机权限才能扫描二维码</string>
+    <string name="scan_history">扫描历史</string>
+    <string name="no_history">暂无扫描记录</string>
+    <string name="clear_all">全部清除</string>
+    <string name="clear_all_confirm">确定清除所有扫描记录？</string>
+    <string name="confirm">确定</string>
+    <string name="cancel">取消</string>
+    <string name="copied">已复制到剪贴板</string>
+    <string name="copy">复制</string>
+    <string name="open_url">打开链接</string>
+    <string name="no_browser">未找到可用的浏览器应用</string>
+    <string name="keepalive_channel">后台运行</string>
+    <string name="keepalive_notification">ADR-Scan 正在后台运行</string>
+    <string name="flash_on">闪光灯已开启</string>
+    <string name="flash_off">闪光灯已关闭</string>
+    <string name="pick_from_album">从相册选择</string>
+    <string name="album_scan_failed">未能从图片中识别到二维码</string>
+</resources>

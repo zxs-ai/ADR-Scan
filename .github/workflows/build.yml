@@ -1,0 +1,44 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Download Gradle Wrapper
+        run: |
+          mkdir -p gradle/wrapper
+          curl -sL https://services.gradle.org/distributions/gradle-8.4-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp/gradle
+          cp /tmp/gradle/gradle-8.4/lib/gradle-wrapper-*.jar gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
+          # If the above didn't work, use gradle to generate wrapper
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            /tmp/gradle/gradle-8.4/bin/gradle wrapper --gradle-version 8.4
+          fi
+
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ADR-Scan-debug
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 90

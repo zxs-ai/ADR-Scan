@@ -1,0 +1,14 @@
+# Built files
+/build/
+/app/build/
+
+# Local configuration
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# Gradle
+.gradle/
+gradle-wrapper.jar
