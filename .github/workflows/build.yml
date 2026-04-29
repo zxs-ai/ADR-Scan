@@ -19,13 +19,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Generate Gradle Wrapper
-        run: |
-          # Download Gradle 8.4 binary and use it to generate the wrapper
-          curl -sL https://services.gradle.org/distributions/gradle-8.4-bin.zip -o /tmp/gradle-8.4-bin.zip
-          unzip -q /tmp/gradle-8.4-bin.zip -d /tmp/
-          /tmp/gradle-8.4/bin/gradle wrapper --gradle-version 8.4
-          chmod +x gradlew
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace

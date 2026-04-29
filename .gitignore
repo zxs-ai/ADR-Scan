@@ -11,4 +11,3 @@ local.properties
 
 # Gradle
 .gradle/
-gradle-wrapper.jar
