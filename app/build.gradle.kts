@@ -11,10 +11,10 @@ android {
 
     defaultConfig {
         applicationId = "com.adrscan"
-        minSdk = 26
+        minSdk = 23
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     buildTypes {
@@ -28,6 +28,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -82,6 +83,9 @@ dependencies {
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Core library desugaring for Java 8+ APIs on older Android (minSdk 23)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
 kapt {
