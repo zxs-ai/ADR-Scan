@@ -32,14 +32,35 @@ jobs:
           gradle-version: '8.4'
           validate-wrappers: false
 
-      - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+      - name: Build APKs
+        run: gradle assembleDebug assembleRelease --no-daemon --stacktrace
+
+      - name: Rename APKs
+        run: |
+          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | sed -E "s/.*\"(.*)\".*/\1/")
+          APK_DIR="release_assets"
+
+          mkdir -p "$APK_DIR"
+
+          # Debug
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-debug.apk"
+          # Release (unsigned, for local install)
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-release-unsigned.apk"
+
+          # Zip for Android direct download (avoid .dat rename by Chinese ROM browsers)
+          for apk in *.apk; do
+            zip "${apk%.apk}.zip" "$apk"
+          done
+
+          echo "apk_dir=$APK_DIR" >> $GITHUB_OUTPUT
+          echo "version_name=$VERSION_NAME" >> $GITHUB_ENV
+        id: rename
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ADR-Scan-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: ADR-Scan
+          path: release_assets/
           retention-days: 90
 
   release:
@@ -59,7 +80,7 @@ jobs:
       - name: Download APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: ADR-Scan-debug
+          name: ADR-Scan
 
       - name: Determine tag
         id: tag
@@ -79,5 +100,5 @@ jobs:
             --repo "${{ github.repository }}" \
             --title "$TAG" \
             --generate-notes \
-            *.apk \
-            || gh release upload "$TAG" *.apk --repo "${{ github.repository }}" --clobber
+            *.apk *.zip \
+            || gh release upload "$TAG" *.apk *.zip --repo "${{ github.repository }}" --clobber
