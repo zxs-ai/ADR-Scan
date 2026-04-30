@@ -48,8 +48,8 @@ jobs:
           cp app/build/outputs/apk/release/app-release-unsigned.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-release-unsigned.apk"
 
           # Zip for Android direct download (avoid .dat rename by Chinese ROM browsers)
-          for apk in *.apk; do
-            zip "${apk%.apk}.zip" "$apk"
+          for apk in "$APK_DIR"/*.apk; do
+            zip -j "${apk%.apk}.zip" "$apk"
           done
 
           echo "apk_dir=$APK_DIR" >> $GITHUB_OUTPUT
