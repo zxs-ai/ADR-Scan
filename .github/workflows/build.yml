@@ -152,7 +152,7 @@ jobs:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
           if [ -z "$GITEE_TOKEN" ]; then
-            echo "GITEE_TOKEN not set, skipping Gitee release"
+            echo "GITEE_TOKEN not set, skipping."
             exit 0
           fi
           if [ "${{ steps.bump.outputs.skip }}" = "false" ]; then
@@ -165,48 +165,24 @@ jobs:
 
           API="https://gitee.com/api/v5/repos/applexyz/adr-scan"
           AUTH="Authorization: Bearer ${GITEE_TOKEN}"
-          # 文本操作 30s 超时，文件上传 600s 超时
           CURL="curl -sS --connect-timeout 10 --max-time 30"
-          CURL_FILE="curl -sS --connect-timeout 10 --max-time 600"
 
-          # 查已有 release
+          # 查已有 release（tag push 后 Gitee 可能已自动创建）
           EXISTING=$($CURL "${API}/releases" -H "$AUTH" | jq -r ".[] | select(.tag_name==\"${TAG}\") | .id")
 
           if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
             echo "Gitee release already exists for $TAG (id=$EXISTING)"
-            RELEASE_ID="$EXISTING"
+            # 更新 body 为干净描述
+            $CURL -X PATCH "${API}/releases/${EXISTING}" \
+              -H "$AUTH" -H "Content-Type: application/json" \
+              -d "{\"body\":\"ADR-Scan ${TAG}\"}" > /dev/null
           else
             echo "Creating Gitee release for $TAG..."
-            RESP=$($CURL -X POST "${API}/releases" \
+            $CURL -X POST "${API}/releases" \
               -H "$AUTH" -H "Content-Type: application/json" \
-              -d "{\"tag_name\":\"${TAG}\",\"name\":\"${TAG}\",\"body\":\"ADR-Scan ${TAG}\",\"target_commitish\":\"main\"}")
-            RELEASE_ID=$(echo "$RESP" | jq -r '.id')
+              -d "{\"tag_name\":\"${TAG}\",\"name\":\"${TAG}\",\"body\":\"ADR-Scan ${TAG}\",\"target_commitish\":\"main\"}" > /dev/null
           fi
-
-          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
-            echo "Failed to get Gitee release. Skipping."
-            exit 0
-          fi
-
-          echo "Gitee release ID: $RELEASE_ID"
-
-          # 上传 APK 附件
-          for apk in release_assets/*.apk; do
-            fname=$(basename "$apk")
-            fsize=$(du -h "$apk" | cut -f1)
-            echo "Uploading $fname ($fsize) to Gitee release $RELEASE_ID..."
-            $CURL_FILE -X POST "${API}/releases/${RELEASE_ID}/attach_files" \
-              -H "$AUTH" \
-              -F "file=@${apk}" && echo "  OK" || echo "  FAILED"
-          done
-
-          for zip in release_assets/*.zip; do
-            fname=$(basename "$zip")
-            fsize=$(du -h "$zip" | cut -f1)
-            echo "Uploading $fname ($fsize) to Gitee release $RELEASE_ID..."
-            $CURL_FILE -X POST "${API}/releases/${RELEASE_ID}/attach_files" \
-              -H "$AUTH" \
-              -F "file=@${zip}" && echo "  OK" || echo "  FAILED"
-          done
 
           echo "Gitee release done."
+          echo "NOTE: APK files cannot be uploaded from GH Actions to Gitee due to cross-border network restrictions."
+          echo "APK downloads are available on this repo's GitHub Releases, or build from source on Gitee."
