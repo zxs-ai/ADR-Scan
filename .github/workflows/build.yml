@@ -139,6 +139,7 @@ jobs:
             echo "GITEE_TOKEN not set, skipping Gitee sync"
             exit 0
           fi
+          git fetch --tags origin
           git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/applexyz/adr-scan.git"
           git push gitee --all  --force
           git push gitee --tags --force
