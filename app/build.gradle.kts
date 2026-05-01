@@ -13,8 +13,8 @@ android {
         applicationId = "com.adrscan"
         minSdk = 23
         targetSdk = 34
-        versionCode = 12
-        versionName = "1.1.9"
+        versionCode = 13
+        versionName = "1.1.10"
     }
 
     buildTypes {
