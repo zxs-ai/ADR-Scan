@@ -69,8 +69,8 @@ jobs:
           VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
           APK_DIR="release_assets"
           mkdir -p "$APK_DIR"
-          cp app/build/outputs/apk/debug/app-debug.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-debug.apk"
-          cp app/build/outputs/apk/release/app-release-unsigned.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-release-unsigned.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-Android6+-debug.apk"
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-Android6+-release-unsigned.apk"
           for apk in "$APK_DIR"/*.apk; do
             zip -j "${apk%.apk}.zip" "$apk"
           done
@@ -127,3 +127,75 @@ jobs:
             --generate-notes \
             release_assets/*.apk release_assets/*.zip \
             || gh release upload "$TAG" release_assets/*.apk release_assets/*.zip --repo "${{ github.repository }}" --clobber
+
+      # ── 同步到 Gitee ──────────────────────────────────────────
+      - name: Push to Gitee
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          if [ -z "$GITEE_TOKEN" ]; then
+            echo "GITEE_TOKEN not set, skipping Gitee sync"
+            exit 0
+          fi
+          git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/applexyz/adr-scan.git"
+          git push gitee --all  --force
+          git push gitee --tags --force
+
+      - name: Create Gitee Release
+        if: |
+          (steps.bump.outputs.skip == 'false') ||
+          startsWith(github.ref, 'refs/tags/v') ||
+          github.event_name == 'workflow_dispatch'
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          if [ -z "$GITEE_TOKEN" ]; then
+            echo "GITEE_TOKEN not set, skipping Gitee release"
+            exit 0
+          fi
+          if [ "${{ steps.bump.outputs.skip }}" = "false" ]; then
+            TAG="v${{ steps.bump.outputs.new_version }}"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+
+          REPO="applexyz/adr-scan"
+          API_BASE="https://gitee.com/api/v5/repos/${REPO}"
+
+          # 创建 Release
+          RESP=$(curl -sS -X POST "${API_BASE}/releases" \
+            -H "Authorization: Bearer ${GITEE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag_name\":\"${TAG}\",\"name\":\"${TAG}\",\"body\":\"Release ${TAG}\",\"target_commitish\":\"main\"}")
+
+          RELEASE_ID=$(echo "$RESP" | jq -r '.id')
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "Gitee release creation failed: $RESP"
+            echo "Trying existing release..."
+            RELEASE_ID=$(curl -sS "${API_BASE}/releases" \
+              -H "Authorization: Bearer ${GITEE_TOKEN}" | jq -r ".[] | select(.tag_name==\"${TAG}\") | .id")
+          fi
+
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "Could not create or find Gitee release. Skipping APK upload."
+            exit 0
+          fi
+
+          echo "Gitee release ID: $RELEASE_ID"
+
+          # 上传 APK 附件
+          for apk in release_assets/*.apk; do
+            echo "Uploading $apk..."
+            curl -sS -X POST "${API_BASE}/releases/${RELEASE_ID}/attach_files" \
+              -H "Authorization: Bearer ${GITEE_TOKEN}" \
+              -F "file=@${apk}"
+          done
+
+          for zip in release_assets/*.zip; do
+            echo "Uploading $zip..."
+            curl -sS -X POST "${API_BASE}/releases/${RELEASE_ID}/attach_files" \
+              -H "Authorization: Bearer ${GITEE_TOKEN}" \
+              -F "file=@${zip}"
+          done
