@@ -3,7 +3,7 @@
 > 安卓离线二维码扫描器 — 打开即扫，无需联网，零权限。
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Android](https://img.shields.io/badge/Android-6.0%2B-brightgreen)](https://github.com/zxs-ai/ADR-Scan/releases)
+[![Android](https://img.shields.io/badge/Android-6.0%2B-brightgreen)]()
 
 ## 简介
 
@@ -50,15 +50,12 @@ APK 文件名格式：`ADR-Scan-v<版本号>-Android<最低安卓版本>plus.apk
 
 ### 下载地址
 
-👉 [**GitHub Releases**](https://github.com/zxs-ai/ADR-Scan/releases) — 选择最新版本，下载对应 APK 安装。
-
-国内用户可访问 [**Gitee Releases**](https://gitee.com/applexyz/adr-scan/releases) 查看版本信息，APK 下载请点击 Release 说明中的 GitHub 链接。
+前往本仓库的 [**Releases**](../../releases) 页面，选择最新版本下载对应的 APK 文件直接安装。
 
 ### 自行构建
 
 ```bash
-git clone https://github.com/zxs-ai/ADR-Scan.git
-# 国内用户: git clone https://gitee.com/applexyz/adr-scan.git
+git clone <本仓库地址>
 cd ADR-Scan
 ./gradlew assembleDebug
 # APK 输出: app/build/outputs/apk/debug/app-debug.apk
