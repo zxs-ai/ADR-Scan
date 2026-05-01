@@ -130,7 +130,7 @@ jobs:
             release_assets/*.apk release_assets/*.zip \
             || gh release upload "$TAG" release_assets/*.apk release_assets/*.zip --repo "${{ github.repository }}" --clobber
 
-      # ── 同步到 Gitee ──────────────────────────────────────────
+      # ── 同步代码到 Gitee（GiteeGo 会独立构建和发布）──────
       - name: Push to Gitee
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
@@ -142,47 +142,4 @@ jobs:
           git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/applexyz/adr-scan.git"
           git push gitee --all  --force
           git push gitee --tags --force
-
-      - name: Create Gitee Release
-        if: |
-          (steps.bump.outputs.skip == 'false') ||
-          startsWith(github.ref, 'refs/tags/v') ||
-          github.event_name == 'workflow_dispatch'
-        env:
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-        run: |
-          if [ -z "$GITEE_TOKEN" ]; then
-            echo "GITEE_TOKEN not set, skipping."
-            exit 0
-          fi
-          if [ "${{ steps.bump.outputs.skip }}" = "false" ]; then
-            TAG="v${{ steps.bump.outputs.new_version }}"
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
-            TAG="${{ github.event.inputs.tag }}"
-          else
-            TAG="${GITHUB_REF_NAME}"
-          fi
-
-          API="https://gitee.com/api/v5/repos/applexyz/adr-scan"
-          AUTH="Authorization: Bearer ${GITEE_TOKEN}"
-          CURL="curl -sS --connect-timeout 10 --max-time 30"
-
-          # 查已有 release（tag push 后 Gitee 可能已自动创建）
-          EXISTING=$($CURL "${API}/releases" -H "$AUTH" | jq -r ".[] | select(.tag_name==\"${TAG}\") | .id")
-
-          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
-            echo "Gitee release already exists for $TAG (id=$EXISTING)"
-            # 更新 body 为干净描述
-            $CURL -X PATCH "${API}/releases/${EXISTING}" \
-              -H "$AUTH" -H "Content-Type: application/json" \
-              -d "{\"body\":\"ADR-Scan ${TAG}\"}" > /dev/null
-          else
-            echo "Creating Gitee release for $TAG..."
-            $CURL -X POST "${API}/releases" \
-              -H "$AUTH" -H "Content-Type: application/json" \
-              -d "{\"tag_name\":\"${TAG}\",\"name\":\"${TAG}\",\"body\":\"ADR-Scan ${TAG}\",\"target_commitish\":\"main\"}" > /dev/null
-          fi
-
-          echo "Gitee release done."
-          echo "NOTE: APK files cannot be uploaded from GH Actions to Gitee due to cross-border network restrictions."
-          echo "APK downloads are available on this repo's GitHub Releases, or build from source on Gitee."
+          echo "Code synced to Gitee. GiteeGo will build and release independently."
