@@ -165,19 +165,21 @@ jobs:
 
           REPO="applexyz/adr-scan"
           API_BASE="https://gitee.com/api/v5/repos/${REPO}"
+          CURL="curl -sS --connect-timeout 10 --max-time 120"
+          AUTH="Authorization: Bearer ${GITEE_TOKEN}"
 
-          # 创建 Release
-          RESP=$(curl -sS -X POST "${API_BASE}/releases" \
-            -H "Authorization: Bearer ${GITEE_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{\"tag_name\":\"${TAG}\",\"name\":\"${TAG}\",\"body\":\"Release ${TAG}\",\"target_commitish\":\"main\"}")
+          # 先查是否已有 Release
+          echo "Checking existing releases for tag $TAG..."
+          RELEASE_ID=$($CURL "${API_BASE}/releases" -H "$AUTH" | jq -r ".[] | select(.tag_name==\"${TAG}\") | .id")
 
-          RELEASE_ID=$(echo "$RESP" | jq -r '.id')
+          # 没有则创建
           if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
-            echo "Gitee release creation failed: $RESP"
-            echo "Trying existing release..."
-            RELEASE_ID=$(curl -sS "${API_BASE}/releases" \
-              -H "Authorization: Bearer ${GITEE_TOKEN}" | jq -r ".[] | select(.tag_name==\"${TAG}\") | .id")
+            echo "Creating new release for $TAG..."
+            RESP=$($CURL -X POST "${API_BASE}/releases" \
+              -H "$AUTH" \
+              -H "Content-Type: application/json" \
+              -d "{\"tag_name\":\"${TAG}\",\"name\":\"${TAG}\",\"body\":\"Release ${TAG}\",\"target_commitish\":\"main\"}")
+            RELEASE_ID=$(echo "$RESP" | jq -r '.id')
           fi
 
           if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
@@ -187,17 +189,19 @@ jobs:
 
           echo "Gitee release ID: $RELEASE_ID"
 
-          # 上传 APK 附件
+          # 上传 APK
           for apk in release_assets/*.apk; do
-            echo "Uploading $apk..."
-            curl -sS -X POST "${API_BASE}/releases/${RELEASE_ID}/attach_files" \
-              -H "Authorization: Bearer ${GITEE_TOKEN}" \
-              -F "file=@${apk}"
+            echo "Uploading $(basename "$apk")..."
+            $CURL -X POST "${API_BASE}/releases/${RELEASE_ID}/attach_files" \
+              -H "$AUTH" \
+              -F "file=@${apk}" || echo "Upload failed for $apk, continuing..."
           done
 
           for zip in release_assets/*.zip; do
-            echo "Uploading $zip..."
-            curl -sS -X POST "${API_BASE}/releases/${RELEASE_ID}/attach_files" \
-              -H "Authorization: Bearer ${GITEE_TOKEN}" \
-              -F "file=@${zip}"
+            echo "Uploading $(basename "$zip")..."
+            $CURL -X POST "${API_BASE}/releases/${RELEASE_ID}/attach_files" \
+              -H "$AUTH" \
+              -F "file=@${zip}" || echo "Upload failed for $zip, continuing..."
           done
+
+          echo "Gitee release sync done."
