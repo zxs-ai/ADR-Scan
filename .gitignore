@@ -14,3 +14,11 @@ local.properties
 
 # Claude Code (local config)
 .claude/
+
+# AI workflow protocol (private)
+SESSION_BRIEF.md
+REQUIREMENT_TRACE.md
+PROJECT_CHARTER.md
+COGNITIVE_GAPS.md
+logs/
+.learning/

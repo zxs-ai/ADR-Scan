@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ADR-Scan</string>
+    <string name="app_name">扫一扫</string>
     <string name="permission_title">需要您的授权</string>
     <string name="permission_camera_desc">使用相机扫描二维码</string>
     <string name="permission_notification_desc">后台运行时显示通知</string>
@@ -18,9 +18,14 @@
     <string name="open_url">打开链接</string>
     <string name="no_browser">未找到可用的浏览器应用</string>
     <string name="keepalive_channel">后台运行</string>
-    <string name="keepalive_notification">ADR-Scan 正在后台运行</string>
+    <string name="keepalive_notification">扫一扫 正在后台运行</string>
     <string name="flash_on">闪光灯已开启</string>
     <string name="flash_off">闪光灯已关闭</string>
     <string name="pick_from_album">从相册选择</string>
     <string name="album_scan_failed">未能从图片中识别到二维码</string>
+    <string name="about_title">关于</string>
+    <string name="about_desc">本二维码扫描工具是自研开源项目，用于快速扫描。</string>
+    <string name="about_project">项目地址</string>
+    <string name="about_feedback">意见反馈</string>
+    <string name="about_version">版本号</string>
 </resources>
