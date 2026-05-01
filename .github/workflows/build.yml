@@ -163,45 +163,28 @@ jobs:
             TAG="${GITHUB_REF_NAME}"
           fi
 
-          REPO="applexyz/adr-scan"
-          API_BASE="https://gitee.com/api/v5/repos/${REPO}"
-          CURL="curl -sS --connect-timeout 10 --max-time 120"
-          AUTH="Authorization: Bearer ${GITEE_TOKEN}"
+          GH_RELEASE_URL="https://github.com/zxs-ai/ADR-Scan/releases/tag/${TAG}"
+          BODY="APK 下载请前往 GitHub Releases: ${GH_RELEASE_URL}"
 
-          # 先查是否已有 Release
-          echo "Checking existing releases for tag $TAG..."
-          RELEASE_ID=$($CURL "${API_BASE}/releases" -H "$AUTH" | jq -r ".[] | select(.tag_name==\"${TAG}\") | .id")
+          # 查已有 release
+          EXISTING=$(curl -sS --connect-timeout 10 --max-time 30 \
+            "https://gitee.com/api/v5/repos/applexyz/adr-scan/releases" \
+            -H "Authorization: Bearer ${GITEE_TOKEN}" | jq -r ".[] | select(.tag_name==\"${TAG}\") | .id")
 
-          # 没有则创建
-          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
-            echo "Creating new release for $TAG..."
-            RESP=$($CURL -X POST "${API_BASE}/releases" \
-              -H "$AUTH" \
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "Gitee release already exists for $TAG (id=$EXISTING), updating body..."
+            curl -sS --connect-timeout 10 --max-time 30 -X PATCH \
+              "https://gitee.com/api/v5/repos/applexyz/adr-scan/releases/${EXISTING}" \
+              -H "Authorization: Bearer ${GITEE_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "{\"tag_name\":\"${TAG}\",\"name\":\"${TAG}\",\"body\":\"Release ${TAG}\",\"target_commitish\":\"main\"}")
-            RELEASE_ID=$(echo "$RESP" | jq -r '.id')
+              -d "{\"body\":\"${BODY}\"}"
+          else
+            echo "Creating Gitee release for $TAG..."
+            curl -sS --connect-timeout 10 --max-time 30 -X POST \
+              "https://gitee.com/api/v5/repos/applexyz/adr-scan/releases" \
+              -H "Authorization: Bearer ${GITEE_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"tag_name\":\"${TAG}\",\"name\":\"${TAG}\",\"body\":\"${BODY}\",\"target_commitish\":\"main\"}"
           fi
-
-          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
-            echo "Could not create or find Gitee release. Skipping APK upload."
-            exit 0
-          fi
-
-          echo "Gitee release ID: $RELEASE_ID"
-
-          # 上传 APK
-          for apk in release_assets/*.apk; do
-            echo "Uploading $(basename "$apk")..."
-            $CURL -X POST "${API_BASE}/releases/${RELEASE_ID}/attach_files" \
-              -H "$AUTH" \
-              -F "file=@${apk}" || echo "Upload failed for $apk, continuing..."
-          done
-
-          for zip in release_assets/*.zip; do
-            echo "Uploading $(basename "$zip")..."
-            $CURL -X POST "${API_BASE}/releases/${RELEASE_ID}/attach_files" \
-              -H "$AUTH" \
-              -F "file=@${zip}" || echo "Upload failed for $zip, continuing..."
-          done
 
           echo "Gitee release sync done."

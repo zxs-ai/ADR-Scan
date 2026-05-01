@@ -52,7 +52,7 @@ APK 文件名格式：`ADR-Scan-v<版本号>-Android<最低安卓版本>plus.apk
 
 👉 [**GitHub Releases**](https://github.com/zxs-ai/ADR-Scan/releases) — 选择最新版本，下载对应 APK 安装。
 
-国内用户也可通过 [**Gitee Releases**](https://gitee.com/applexyz/adr-scan/releases) 下载。
+国内用户可访问 [**Gitee Releases**](https://gitee.com/applexyz/adr-scan/releases) 查看版本信息，APK 下载请点击 Release 说明中的 GitHub 链接。
 
 ### 自行构建
 
