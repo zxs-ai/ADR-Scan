@@ -71,8 +71,8 @@ jobs:
           VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
           APK_DIR="release_assets"
           mkdir -p "$APK_DIR"
-          cp app/build/outputs/apk/debug/app-debug.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-Android6+-debug.apk"
-          cp app/build/outputs/apk/release/app-release-unsigned.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-Android6+-release-unsigned.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-Android6plus-debug.apk"
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-Android6plus-release-unsigned.apk"
           for apk in "$APK_DIR"/*.apk; do
             zip -j "${apk%.apk}.zip" "$apk"
           done

@@ -35,16 +35,16 @@ ADR-Scan 是一款开源的安卓二维码/条码扫描工具，基于 Google ML
 
 ### 版本选择
 
-APK 文件名格式：`ADR-Scan-v<版本号>-Android<最低安卓版本>+.apk`
+APK 文件名格式：`ADR-Scan-v<版本号>-Android<最低安卓版本>plus.apk`
 
-文件名中的 `Android6+` 表示**最低支持 Android 6.0**，兼容至 Android 14。请根据你的设备选择对应版本：
+文件名中的 `Android6plus` 表示**最低支持 Android 6.0**，兼容至 Android 14。请根据你的设备选择对应版本：
 
 | 文件名示例 | 适用设备 |
 |-----------|---------|
-| `ADR-Scan-v1.1.0-Android6+-debug.apk` | Android 6.0 ～ 14，Debug 版本 |
-| `ADR-Scan-v1.1.0-Android6+-release-unsigned.apk` | Android 6.0 ～ 14，Release 版本 |
+| `ADR-Scan-v1.1.0-Android6plus-debug.apk` | Android 6.0 ～ 14，Debug 版本 |
+| `ADR-Scan-v1.1.0-Android6plus-release-unsigned.apk` | Android 6.0 ～ 14，Release 版本 |
 
-> 如果未来发布不同安卓版本范围的包（如 `Android11+`），请根据你设备的 Android 版本选择匹配的 APK。版本号可在手机 **设置 → 关于手机 → Android 版本** 中查看。
+> 如果未来发布不同安卓版本范围的包（如 `Android11plus`），请根据你设备的 Android 版本选择匹配的 APK。版本号可在手机 **设置 → 关于手机 → Android 版本** 中查看。
 
 > 安装时如提示"应用未安装"，请先卸载旧版本后重试。
 
