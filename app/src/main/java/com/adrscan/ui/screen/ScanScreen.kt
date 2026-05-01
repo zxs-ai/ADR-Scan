@@ -18,7 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,12 +34,7 @@ import com.adrscan.R
 import com.adrscan.data.ScanDao
 import com.adrscan.data.ScanRecord
 import com.adrscan.scanner.QrResult
-import com.adrscan.ui.component.AboutDialog
-import com.adrscan.ui.component.ContentSheet
-import com.adrscan.ui.component.CameraPreview
-import com.adrscan.ui.component.FlashToggle
-import com.adrscan.ui.component.HistoryPanel
-import com.adrscan.ui.component.QrOverlay
+import com.adrscan.ui.component.*
 import com.adrscan.ui.theme.SurfaceOverlay
 import com.adrscan.ui.theme.TextPrimary
 import com.adrscan.util.UrlHelper
@@ -142,7 +136,6 @@ fun ScanScreen(viewModel: ScanViewModel) {
     var historyExpanded by remember { mutableStateOf(false) }
     var qrResults by remember { mutableStateOf<List<QrResult>>(emptyList()) }
     var sheetContent by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
-    var showAboutDialog by remember { mutableStateOf(false) }
 
     // Cooldown: prevent same QR from triggering within 5 seconds
     var lastProcessedContent by remember { mutableStateOf("") }
@@ -211,11 +204,6 @@ fun ScanScreen(viewModel: ScanViewModel) {
         )
     }
 
-    // About dialog
-    if (showAboutDialog) {
-        AboutDialog(onDismiss = { showAboutDialog = false })
-    }
-
     // Layout: portrait vs landscape
     if (isLandscape) {
         // Landscape: camera left, history right
@@ -245,7 +233,6 @@ fun ScanScreen(viewModel: ScanViewModel) {
                         .align(Alignment.TopEnd),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    InfoButton { showAboutDialog = true }
                     AlbumButton { albumLauncher.launch("image/*") }
                     FlashToggle(isOn = isFlashOn, onToggle = { isFlashOn = !isFlashOn })
                 }
@@ -292,7 +279,6 @@ fun ScanScreen(viewModel: ScanViewModel) {
                         .align(Alignment.TopEnd),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    InfoButton { showAboutDialog = true }
                     AlbumButton { albumLauncher.launch("image/*") }
                     FlashToggle(isOn = isFlashOn, onToggle = { isFlashOn = !isFlashOn })
                 }
@@ -367,24 +353,6 @@ private fun AlbumButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.PhotoLibrary,
-            contentDescription = null,
-            tint = TextPrimary,
-            modifier = Modifier.size(24.dp)
-        )
-    }
-}
-
-@Composable
-private fun InfoButton(onClick: () -> Unit) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(SurfaceOverlay)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Info,
             contentDescription = null,
             tint = TextPrimary,
             modifier = Modifier.size(24.dp)
