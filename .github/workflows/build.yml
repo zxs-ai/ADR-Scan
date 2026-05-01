@@ -12,8 +12,11 @@ on:
         required: false
         default: ''
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,29 +35,46 @@ jobs:
           gradle-version: '8.4'
           validate-wrappers: false
 
+      # ── 仅 main/master 分支自动升 patch 版本 ──────────────────
+      - name: Auto bump version
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        id: bump
+        run: |
+          # 已经是版本号递增提交则跳过，防止死循环
+          if git log -1 --pretty=%B | grep -q "chore: auto bump"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CURRENT_VERSION=$(grep 'versionName' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+
+          CURRENT_CODE=$(grep 'versionCode' app/build.gradle.kts | sed -E 's/[^0-9]*([0-9]+).*/\1/')
+          NEW_CODE=$((CURRENT_CODE + 1))
+
+          sed -i "s/versionName = \"$CURRENT_VERSION\"/versionName = \"$NEW_VERSION\"/" app/build.gradle.kts
+          sed -i "s/versionCode = $CURRENT_CODE/versionCode = $NEW_CODE/" app/build.gradle.kts
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      # ── 构建 APK ──────────────────────────────────────────────
       - name: Build APKs
         run: gradle assembleDebug assembleRelease --no-daemon --stacktrace
 
       - name: Rename APKs
+        id: rename
         run: |
-          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | sed -E "s/.*\"(.*)\".*/\1/")
+          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
           APK_DIR="release_assets"
-
           mkdir -p "$APK_DIR"
-
-          # Debug
           cp app/build/outputs/apk/debug/app-debug.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-debug.apk"
-          # Release (unsigned, for local install)
           cp app/build/outputs/apk/release/app-release-unsigned.apk "$APK_DIR/ADR-Scan-v${VERSION_NAME}-release-unsigned.apk"
-
-          # Zip for Android direct download (avoid .dat rename by Chinese ROM browsers)
           for apk in "$APK_DIR"/*.apk; do
             zip -j "${apk%.apk}.zip" "$apk"
           done
-
-          echo "apk_dir=$APK_DIR" >> $GITHUB_OUTPUT
-          echo "version_name=$VERSION_NAME" >> $GITHUB_ENV
-        id: rename
+          echo "apk_dir=$APK_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -63,42 +83,47 @@ jobs:
           path: release_assets/
           retention-days: 90
 
-  release:
-    needs: build
-    # 仅 tag 推送或手动触发时创建 Release
-    if: |
-      startsWith(github.ref, 'refs/tags/v') ||
-      github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download APK artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ADR-Scan
-
-      - name: Determine tag
-        id: tag
+      # ── 推送版本号递增提交 ────────────────────────────────────
+      - name: Commit version bump
+        if: steps.bump.outputs.skip == 'false'
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
-            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/build.gradle.kts
+          git commit -m "chore: auto bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
+          git push
 
-      - name: Create Release
+      # ── 创建 Release (main 分支自动) ──────────────────────────
+      - name: Create Release (auto)
+        if: steps.bump.outputs.skip == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.tag.outputs.tag }}
+          TAG: v${{ steps.bump.outputs.new_version }}
         run: |
           gh release create "$TAG" \
             --repo "${{ github.repository }}" \
             --title "$TAG" \
             --generate-notes \
-            *.apk *.zip \
-            || gh release upload "$TAG" *.apk *.zip --repo "${{ github.repository }}" --clobber
+            release_assets/*.apk release_assets/*.zip \
+            || gh release upload "$TAG" release_assets/*.apk release_assets/*.zip --repo "${{ github.repository }}" --clobber
+
+      # ── 创建 Release (tag 推送 / 手动触发) ────────────────────
+      - name: Create Release (tag or manual)
+        if: |
+          startsWith(github.ref, 'refs/tags/v') ||
+          github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+
+          gh release create "$TAG" \
+            --repo "${{ github.repository }}" \
+            --title "$TAG" \
+            --generate-notes \
+            release_assets/*.apk release_assets/*.zip \
+            || gh release upload "$TAG" release_assets/*.apk release_assets/*.zip --repo "${{ github.repository }}" --clobber
