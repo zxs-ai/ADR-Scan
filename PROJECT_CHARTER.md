@@ -31,7 +31,7 @@
 ## 4. 约束条件
 
 - **技术栈约束**: Kotlin + Jetpack Compose + CameraX + ML Kit + Room + Hilt
-- **兼容性约束**: Android 8.0 (API 26) ~ 14 (API 34)，7~13 寸平板为主
+- **兼容性约束**: Android 6.0 (API 23) ~ 14 (API 34)，7~13 寸平板为主
 - **网络约束**: 无网络请求，离线运行
 - **分发约束**: APK 直装 + GitHub Releases，不上架商店
 - **开源协议**: MIT License
